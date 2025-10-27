@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "720002591127",
+    "firebase_url": "https://weatherjournalapp-7ae33-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "weatherjournalapp-7ae33",
+    "storage_bucket": "weatherjournalapp-7ae33.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720002591127:android:1cdf3ceeabc3e9adffbcd2",
+        "android_client_info": {
+          "package_name": "com.example.weatherjournalapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBC6zSqPEsUxsoV01Lpzi8YTISZM5ixpM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

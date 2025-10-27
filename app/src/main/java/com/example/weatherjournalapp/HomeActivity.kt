@@ -137,7 +137,7 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    // fungsi buat ngambil data dari firebase
+    // fungsi buat ngambildata dari firebase
     private fun loadJournalsFromFirebase() {
         Log.d(TAG, "loadJournalsFromFirebase: Mulai ambil data dari Firebase...")
         dbRef.addListenerForSingleValueEvent(object : ValueEventListener {

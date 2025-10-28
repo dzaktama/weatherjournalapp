@@ -1,15 +1,16 @@
 package com.example.weatherjournalapp
 
+// ... (import biarin aja) ...
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log // IMPORT PENTING BUAT DEBUG
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog // Import ini
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,17 +27,12 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+
 
 // halaman utama setelah user login
 class HomeActivity : AppCompatActivity() {
 
-
-    private val API_KEY = "fc2df916b3b7b84d3bba2c097f507963"
-
-    // ini tag buat nge-cek di logcat
+    // tag buat nge-cek di logcat
     private val TAG = "HomeActivity"
 
     // properti buat firebase auth
@@ -48,31 +44,34 @@ class HomeActivity : AppCompatActivity() {
     // properti buat ngambil lokasi gps
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    // properti buat ngurus daftar jurnal
+    // properti buat komponen ui di layout
     private lateinit var rvCityList: RecyclerView
-    private lateinit var editAddCity: EditText
+    private lateinit var editAddCity: EditText // input nama tempat
     private lateinit var editAddNote: EditText
     private lateinit var btnAddCity: Button
     private lateinit var btnLogout: Button
+    // tambahin variabel buat textview sapaan
+    private lateinit var tvWelcomeUser: TextView
 
-    // adapter-nya kita jadiin variabel global
+    // adapter buat ngatur recyclerview
     private lateinit var cityAdapter: CityAdapter
 
     companion object {
-        // list data-nya kita bikin static biar bisa diakses dari DetailActivity
+        // list data jurnal sementara di memori hp (static)
         val favoriteCities = ArrayList<FavoriteCity>()
     }
 
+    // fungsi yg jalan pertama kali pas halaman dibuka
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_home)
+        setContentView(R.layout.activity_home) // pake layout activity_home.xml
         Log.d(TAG, "onCreate: Activity dibuat")
 
-        // inisialisasi semua properti
+        // siapin alat firebase auth & gps
         auth = Firebase.auth
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // cek kalo user udah login
+        // cek user udah login apa belum
         val currentUser = auth.currentUser
         if (currentUser == null) {
             Log.e(TAG, "User null, balik ke Login")
@@ -81,21 +80,28 @@ class HomeActivity : AppCompatActivity() {
             return
         }
 
-        // inisialisasi database ref, khusus buat user ini
+        // siapin alamat database buat user ini
         val dbPath = "journals/${currentUser.uid}"
         dbRef = Firebase.database.reference.child(dbPath)
         Log.d(TAG, "Database reference diatur ke: $dbPath")
 
+        // sambungin variabel ke komponen di xml
         rvCityList = findViewById(R.id.rv_city_list)
         editAddCity = findViewById(R.id.edit_add_city)
         editAddNote = findViewById(R.id.edit_add_note)
         btnAddCity = findViewById(R.id.btn_add_city)
         btnLogout = findViewById(R.id.btn_logout)
+        // sambungin textview sapaan
+        tvWelcomeUser = findViewById(R.id.tv_welcome_user)
 
-        // manggil fungsi buat nyiapin recyclerview
+        // tampilin sapaan
+        val userEmail = currentUser.email
+        tvWelcomeUser.text = "Halo, ${userEmail ?: "Pengguna"}"
+
+        // siapin recyclerview
         setupRecyclerView()
 
-        // panggil fungsi buat ngambil data dari firebase
+        // ambil data awal dari firebase
         loadJournalsFromFirebase()
 
         // ngasih aksi ke tombol tambah
@@ -110,10 +116,12 @@ class HomeActivity : AppCompatActivity() {
             Log.d(TAG, "Tombol 'Logout' diklik")
             auth.signOut()
             val intent = Intent(this, LoginActivity::class.java)
+            // tambahin flags biar ga bisa back ke home setelah logout
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
         }
-    }
+    } // akhir onCreate
 
     // fungsi ini kepanggil tiap kita balik ke halaman ini
     override fun onResume() {
@@ -137,180 +145,166 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    // fungsi buat ngambildata dari firebase
+    // fungsi buat ngambil data jurnal dari firebase sekali aja
     private fun loadJournalsFromFirebase() {
         Log.d(TAG, "loadJournalsFromFirebase: Mulai ambil data dari Firebase...")
         dbRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            // kalo data berhasil diambil
             override fun onDataChange(snapshot: DataSnapshot) {
                 Log.d(TAG, "onDataChange: Data diterima, jumlah: ${snapshot.childrenCount}")
-                favoriteCities.clear()
+                favoriteCities.clear() // kosongin list lama
 
+                // loop tiap data jurnal yg diterima
                 for (journalSnapshot in snapshot.children) {
-                    val journal = journalSnapshot.getValue(FavoriteCity::class.java)
+                    val journal = journalSnapshot.getValue(FavoriteCity::class.java) // ubah jadi objek kotlin
                     if (journal != null) {
-                        journal.firebaseId = journalSnapshot.key ?: ""
-                        favoriteCities.add(journal)
+                        journal.firebaseId = journalSnapshot.key ?: "" // simpen id firebase
+                        favoriteCities.add(journal) // tambahin ke list lokal
                     }
                 }
-                cityAdapter.notifyDataSetChanged()
+                cityAdapter.notifyDataSetChanged() // refresh tampilan list
             }
 
-            // kalo gagal dengerin
+            // kalo gagal ngambil data
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "onCancelled: Gagal muat data: ${error.message}")
                 Toast.makeText(baseContext, "Gagal muat data", Toast.LENGTH_SHORT).show()
             }
         })
-    }
+    } // akhir loadJournalsFromFirebase
 
     // fungsi buat nyiapin recyclerview
     private fun setupRecyclerView() {
         Log.d(TAG, "setupRecyclerView: Adapter dan LayoutManager diatur")
-        cityAdapter = CityAdapter(this)
-        rvCityList.layoutManager = LinearLayoutManager(this)
-        rvCityList.adapter = cityAdapter
+        cityAdapter = CityAdapter(this) // bikin adapter
+        rvCityList.layoutManager = LinearLayoutManager(this) // atur layout lurus ke bawah
+        rvCityList.adapter = cityAdapter // pasang adapter ke recyclerview
     }
 
-    // fungsi nge-fetch data cuaca buat ditambahin ke list
-    private fun fetchWeatherForCity(cityName: String, note: String, lat: Double, lon: Double) {
-        Log.d(TAG, "fetchWeatherForCity: Panggil API cuaca untuk $cityName")
-        ApiClient.instance.getWeatherByCity(cityName, API_KEY)
-            .enqueue(object : Callback<WeatherResponse> {
-                override fun onResponse(call: Call<WeatherResponse>, response: Response<WeatherResponse>) {
-                    if (response.isSuccessful) {
-                        response.body()?.let {
-                            Log.d(TAG, "onResponse (Cuaca): Sukses dapet data cuaca")
-                            val condition = it.weatherInfo.firstOrNull()?.main ?: "Clear"
-                            val temp = "${it.mainInfo.temp}°C"
-
-                            val city = FavoriteCity(
-                                name = it.cityName,
-                                temperature = temp,
-                                note = note,
-                                condition = condition,
-                                latitude = lat,
-                                longitude = lon
-                            )
-
-                            // simpen data baru ke firebase
-                            val newJournalRef = dbRef.push()
-                            newJournalRef.setValue(city)
-                                .addOnSuccessListener {
-                                    Log.d(TAG, "onSuccess (Firebase): Sukses simpen ke database")
-                                    city.firebaseId = newJournalRef.key ?: ""
-                                    favoriteCities.add(city)
-                                    cityAdapter.notifyDataSetChanged()
-
-                                    editAddCity.text.clear()
-                                    editAddNote.text.clear()
-                                }
-                                .addOnFailureListener { e ->
-                                    Log.e(TAG, "onFailure (Firebase): Gagal simpen: ${e.message}")
-                                    Toast.makeText(baseContext, "Gagal nyimpen data", Toast.LENGTH_SHORT).show()
-                                }
-                        }
-                    } else {
-                        Log.w(TAG, "onResponse (Cuaca): Gagal, kode: ${response.code()} (Kota gak ketemu?)")
-                        Toast.makeText(baseContext, "Kota gak ketemu", Toast.LENGTH_SHORT).show()
-                    }
-                }
-
-                override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                    Log.e(TAG, "onFailure (Cuaca): Gagal konek: ${t.message}")
-                    Toast.makeText(baseContext, "Gagal konek: ${t.message}", Toast.LENGTH_SHORT).show()
-                }
-            })
-    }
-
-    // buat ngecek izin lokasi
+    // buat ngecek izin lokasi sebelum nyimpen
     private fun checkLocationPermission() {
-        val cityName = editAddCity.text.toString()
-        if (cityName.isEmpty()) {
-            Log.w(TAG, "checkLocationPermission: Nama kota kosong")
-            Toast.makeText(this, "Nama kota gaboleh kosong", Toast.LENGTH_SHORT).show()
-            return
+        val placeName = editAddCity.text.toString() // ambil nama tempat
+        if (placeName.isEmpty()) { // cek kalo kosong
+            Log.w(TAG, "checkLocationPermission: Nama tempat kosong")
+            Toast.makeText(this, "Nama tempat gaboleh kosong", Toast.LENGTH_SHORT).show()
+            return // hentiin proses kalo kosong
         }
 
-        // kita cek izin FINE (akurasi tinggi) aja
+        // cek apa udah punya izin gps akurat
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "checkLocationPermission: Izin lokasi BELUM ada. Minta izin...")
-            // kalo belum ada izin, minta izin dulu
+            // kalo belum, minta izin ke user
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
-                1001)
+                1001) // kode permintaan izin
         } else {
             // kalo izin udah ada, langsung simpen jurnalnya
             Log.d(TAG, "checkLocationPermission: Izin lokasi SUDAH ada. Panggil saveJournalEntry().")
-            saveJournalEntry()
+            saveJournalEntry() // panggil fungsi buat ambil gps & simpen
         }
-    }
+    } // akhir checkLocationPermission
 
-    // fungsi buat ambil lokasi terakhir dan manggil api cuaca
+    // fungsi buat ambil lokasi gps dan nyimpen jurnal ke firebase
     private fun saveJournalEntry() {
         Log.d(TAG, "saveJournalEntry: Masuk fungsi, mulai ambil GPS...")
+        // cek lagi izinnya buat jaga2
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "saveJournalEntry: Gagal, gak punya izin (ini harusnya gak kejadian)")
             return
         }
 
+        // alat buat batalin request gps kalo kelamaan
         val cancellationTokenSource = CancellationTokenSource()
 
-        // minta lokasi saat ini, BUKAN lokasi terakhir
+        // minta lokasi saat ini pake akurasi tinggi
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
-            .addOnSuccessListener { location ->
-                if (location != null) {
+            .addOnSuccessListener { location -> // kalo berhasil dapet lokasi
+                if (location != null) { // kalo lokasi gak null
                     Log.d(TAG, "onSuccess (GPS): Sukses dapet lokasi: ${location.latitude}")
+                    // ambil nama tempat & catatan dari input
                     val name = editAddCity.text.toString()
                     val note = editAddNote.text.toString()
+                    // ambil waktu sekarang dalam milidetik
+                    val currentTimeMillis = System.currentTimeMillis()
 
-                    // baru kita panggil api cuaca sambil bawa data gps
-                    fetchWeatherForCity(name, note, location.latitude, location.longitude)
+                    // ## PASTIKAN KONSTRUKTOR SESUAI DEFINISI FavoriteCity ##
+                    // pake named arguments biar aman dari salah urutan
+                    val city = FavoriteCity(
+                        name = name,
+                        note = note,
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        timestamp = currentTimeMillis
+                    )
+                    // ## AKHIR PEMANGGILAN KONSTRUKTOR ##
 
-                } else {
+                    // simpen data baru ke firebase
+                    val newJournalRef = dbRef.push() // bikin id unik baru
+                    newJournalRef.setValue(city) // simpen objeknya ke id itu
+                        .addOnSuccessListener { // kalo sukses nyimpen ke firebase
+                            Log.d(TAG, "onSuccess (Firebase): Sukses simpen ke database")
+                            city.firebaseId = newJournalRef.key ?: "" // simpen id firebase ke objek lokal
+                            favoriteCities.add(0, city) // tambahin ke list lokal di paling atas
+                            cityAdapter.notifyItemInserted(0) // refresh lebih efisien
+                            rvCityList.scrollToPosition(0) // scroll ke paling atas (opsional)
+
+                            // kosongin input
+                            editAddCity.text.clear()
+                            editAddNote.text.clear()
+                        }
+                        .addOnFailureListener { e -> // kalo gagal nyimpen ke firebase
+                            Log.e(TAG, "onFailure (Firebase Save): Gagal simpen: ${e.message}", e)
+                            Toast.makeText(baseContext, "Gagal simpan ke DB: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+
+                } else { // kalo lokasi null (gps mati?)
                     Log.e(TAG, "onSuccess (GPS): Sukses, tapi lokasi NULL. Cek GPS/Layanan Lokasi di HP.")
                     Toast.makeText(this, "Lokasi (null), nyalain GPS", Toast.LENGTH_LONG).show()
                 }
             }
-            .addOnFailureListener { exception ->
-                // ini kalo user matiin gps atau gaada sinyal
+            .addOnFailureListener { exception -> // kalo gagal dapet lokasi
                 Log.e(TAG, "onFailure (GPS): Gagal dapet lokasi: ${exception.message}")
                 Toast.makeText(this, "Gagal ambil lokasi: ${exception.message}", Toast.LENGTH_LONG).show()
             }
-    }
+    } // akhir saveJournalEntry
 
-    // fungsi yang jalan setelah user milih 'allow' atau 'deny' izin lokasi
+    // fungsi yg otomatis jalan setelah user jawab dialog izin
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // kalo diizinin, simpen jurnalnya
+        if (requestCode == 1001) { // cek kalo ini jawaban buat izin lokasi
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { // cek kalo diizinin
+                // kalo diizinin, lanjut simpen jurnalnya
                 Log.d(TAG, "onRequestPermissionsResult: Izin DIBERIKAN. Panggil saveJournalEntry().")
                 saveJournalEntry()
-            } else {
-                // kalo ditolak, kasih tau user
+            } else { // kalo ditolak
                 Log.w(TAG, "onRequestPermissionsResult: Izin DITOLAK.")
                 Toast.makeText(this, "Izin lokasi ditolak", Toast.LENGTH_SHORT).show()
             }
         }
-    }
+    } // akhir onRequestPermissionsResult
 
     // fungsi buat nampilin pop-up konfirmasi hapus
     fun showDeleteDialog(position: Int) {
-        // ambil data item yang mau dihapus
+        // ambil data item yg mau dihapus dari list lokal
+        // tambahin cek biar ga crash kalo posisi ga valid
+        if (position < 0 || position >= favoriteCities.size) {
+            Log.e(TAG, "showDeleteDialog dipanggil dengan posisi tidak valid: $position")
+            return
+        }
         val cityToDelete = favoriteCities[position]
 
         // bikin dialog konfirmasi
         AlertDialog.Builder(this)
             .setTitle("Hapus Jurnal")
             .setMessage("Yakin mau hapus jurnal untuk ${cityToDelete.name}?")
-            .setPositiveButton("Ya") { _, _ ->
-                // kalo user klik 'Ya', panggil fungsi hapus
+            .setPositiveButton("Ya") { _, _ -> // kalo user klik 'Ya'
+                // panggil fungsi hapus
                 deleteJournalEntry(position, cityToDelete.firebaseId)
             }
-            .setNegativeButton("Batal", null) // kalo batal, gak ngapa-ngapain
-            .show()
-    }
+            .setNegativeButton("Batal", null) // kalo 'Batal', gak ngapa2in
+            .show() // tampilin dialognya
+    } // akhir showDeleteDialog
 
     // fungsi buat hapus data dari firebase dan list lokal
     private fun deleteJournalEntry(position: Int, firebaseId: String) {
@@ -325,20 +319,31 @@ class HomeActivity : AppCompatActivity() {
 
         // hapus dari Firebase pake ID uniknya
         dbRef.child(firebaseId).removeValue()
-            .addOnSuccessListener {
+            .addOnSuccessListener { // kalo di firebase sukses
                 Log.d(TAG, "onSuccess (Firebase Delete): Sukses hapus dari database")
-                // kalo di firebase sukses, hapus juga dari list lokal
-                favoriteCities.removeAt(position)
-                // refresh adapter-nya
-                cityAdapter.notifyItemRemoved(position)
-                // refresh posisi item lain setelah dihapus (opsional tapi bagus)
-                cityAdapter.notifyItemRangeChanged(position, favoriteCities.size)
-
-                Toast.makeText(this, "Jurnal dihapus", Toast.LENGTH_SHORT).show()
+                // cek lagi posisi sebelum hapus dari list lokal
+                if (position >= 0 && position < favoriteCities.size) {
+                    // Pastikan item yang akan dihapus dari list lokal memang benar
+                    if (favoriteCities[position].firebaseId == firebaseId) {
+                        favoriteCities.removeAt(position) // hapus juga dari list lokal pake posisi
+                        // refresh adapter (bilangin item dihapus)
+                        cityAdapter.notifyItemRemoved(position)
+                        // refresh posisi item lain setelah dihapus (opsional)
+                        cityAdapter.notifyItemRangeChanged(position, favoriteCities.size)
+                        Toast.makeText(this, "Jurnal dihapus", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Log.e(TAG, "onSuccess (Firebase Delete): Mismatch ID saat hapus list lokal! Posisi $position, ID $firebaseId")
+                        loadJournalsFromFirebase() // Muat ulang jika ada ketidaksesuaian
+                    }
+                } else {
+                    Log.e(TAG, "onSuccess (Firebase Delete): Posisi $position tidak valid untuk list lokal!")
+                    loadJournalsFromFirebase() // Data di firebase sudah terhapus, muat ulang data dari awal
+                }
             }
-            .addOnFailureListener { e ->
+            .addOnFailureListener { e -> // kalo gagal hapus di firebase
                 Log.e(TAG, "onFailure (Firebase Delete): Gagal hapus: ${e.message}")
                 Toast.makeText(this, "Gagal hapus dari server", Toast.LENGTH_SHORT).show()
             }
-    }
-}
+    } // akhir deleteJournalEntry
+
+} // akhir class HomeActivity

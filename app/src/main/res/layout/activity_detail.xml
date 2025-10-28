@@ -7,30 +7,15 @@
     android:padding="24dp"
     tools:context=".DetailActivity">
 
-    <ImageView
-        android:id="@+id/iv_detail_icon"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"
-        tools:src="@drawable/ic_cloud" />
-
     <TextView
         android:id="@+id/tv_detail_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:gravity="center"
-        android:text="Nama Kota"
+        android:text="Nama Tempat"
         android:textSize="28sp"
         android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tv_detail_temp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="25.0°C"
-        android:textSize="22sp" />
 
     <TextView
         android:id="@+id/tv_detail_coords_label"
@@ -38,8 +23,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Dicatat di:"
-        android:textSize="14sp"
-        android:layout_marginTop="8dp"/>
+        android:textSize="14sp"/>
 
     <TextView
         android:id="@+id/tv_detail_coords_value"
@@ -48,6 +32,17 @@
         android:gravity="center"
         android:text="Lat: -7.1234, Lon: 110.5678"
         android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tv_detail_timestamp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Waktu: Memuat..."
+        android:textSize="12sp"
+        android:textStyle="italic"
+        android:layout_marginTop="4dp"/>
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

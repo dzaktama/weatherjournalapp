@@ -1,21 +1,20 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("org.jetbrains.kotlin.android") // ini yang kita ganti tadi
+    id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
-    id("kotlin-parcelize") // plugin buat ngirim data antar activity
+    id("kotlin-parcelize")
 }
 
 android {
     namespace = "com.example.weatherjournalapp"
-    compileSdk = 36
+    compileSdk = 36 // sesuaikan
 
     defaultConfig {
-        applicationId = "com.example.weatherjournalapp"
-        minSdk = 24
+        applicationId = "com.example.weatherjournalapp" 
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -48,21 +47,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // dependensi firebase auth & gps
+    // dependensi firebase auth, database, dan gps
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-database-ktx")
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
-    // dependensi baru buat database
-    implementation("com.google.firebase:firebase-database-ktx")
-
-    // dependensi buat ngambil data api (retrofit)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-
-    // dependensi buat nampilin daftar (recyclerview)
+    // dependensi list & kotak
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-
-    // dependensi buat 'kotak' cardview
     implementation("androidx.cardview:cardview:1.0.0")
 }

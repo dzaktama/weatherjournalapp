@@ -1,53 +1,33 @@
 package com.example.weatherjournalapp
 
 import android.os.Parcelable
-import com.google.firebase.database.Exclude // IMPORT INI
-import com.google.gson.annotations.SerializedName
+import com.google.firebase.database.Exclude
 import kotlinx.parcelize.Parcelize
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-// data class buat nampung data cuaca dari api
-data class WeatherResponse(
-    @SerializedName("weather") val weatherInfo: List<WeatherInfo>,
-    @SerializedName("main") val mainInfo: MainInfo,
-    @SerializedName("name") val cityName: String
-)
-
-data class WeatherInfo(
-    @SerializedName("main") val main: String,
-    @SerializedName("description") val description: String
-)
-
-data class MainInfo(
-    @SerializedName("temp") val temp: Double,
-    @SerializedName("humidity") val humidity: Int
-)
-
-
-// cetakan data buat jurnal favorit kita
-@Parcelize
+// cetakan data buat jurnal lokasi kita
+@Parcelize // bikin class ini bisa dikirim lewat intent
 data class FavoriteCity(
-    @get:Exclude // bikin firebaseId gak ikut kesimpen di database
+    @get:Exclude // bikin firebaseId ga ikut kesimpen di database
     var firebaseId: String = "", // buat nyimpen key unik dari firebase
 
+    // data jurnalnya
     val name: String = "",
-    val temperature: String = "",
     val note: String = "",
-    val condition: String = "", // kita simpen 'Clouds' atau 'Rain', bukan id icon
     val latitude: Double = 0.0,
-    val longitude: Double = 0.0
-) : Parcelable {
-    // firebase butuh constructor kosong
-    constructor() : this("", "", "", "", "", 0.0, 0.0)
+    val longitude: Double = 0.0,
+    val timestamp: Long = 0L // buat nyimpen waktu pas jurnal dibuat
+) : Parcelable { // nandain kalo class ini bisa dikirim
+    // firebase butuh constructor kosong (otomatis dibuat kotlin kalo ada default value)
 
-    // fungsi tambahan buat nentuin icon
-    @Exclude
-    fun getWeatherIcon(): Int {
-        return when (condition.lowercase()) {
-            "clouds" -> R.drawable.ic_cloud
-            "rain", "drizzle", "thunderstorm" -> R.drawable.ic_rain
-            "clear" -> R.drawable.ic_sun
-            "snow" -> R.drawable.ic_snow
-            else -> R.drawable.ic_default
-        }
+    // fungsi bantu buat ubah angka timestamp jadi teks tanggal yg gampang dibaca
+    @Exclude // biar fungsi ini ga ikut kesimpen di firebase
+    fun getFormattedTimestamp(): String {
+        // formatnya: Senin, 28 Oktober 2025 10:30
+        val sdf = SimpleDateFormat("EEEE, dd MMMM yyyy HH:mm", Locale("id", "ID")) // pake format indonesia
+        val date = Date(timestamp) // ubah angka milidetik jadi objek tanggal
+        return sdf.format(date) // ubah objek tanggal jadi teks sesuai format
     }
 }
